@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: shodhacode
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  backend:
+    build: ./backend
+    container_name: shodh_backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:shodhacode
+      SPRING_PROFILES_ACTIVE: dev
+    depends_on:
+      - db
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # allows Spring Boot to run docker inside container
+      - ./backend:/app
+
+  frontend:
+    build: ./frontend
+    container_name: shodh_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    depends_on:
+      - backend
+
+  judge-env:
+    image: openjdk:17-slim
+    container_name: judge_env
+    command: bash
+    stdin_open: true
+    tty: true
+
+volumes:
+  db_data:
